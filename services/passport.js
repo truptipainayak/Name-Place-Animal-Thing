@@ -7,6 +7,8 @@ const keys = require('../config/keys');
 
 const User = mongoose.model('users');
 
+
+//can be copied from passport website too 
 passport.serializeUser(function(user, done) {
   done(null, user.id);
 });
@@ -17,7 +19,7 @@ passport.deserializeUser(function(id, done) {
   });
 });
 
-//to implement google auth
+//to implement google auth can be copied from passport website too 
 passport.use(new GoogleStrategy({
     clientID: keys.googleClientID,
     clientSecret: keys.googleClientSecret,
@@ -27,18 +29,15 @@ passport.use(new GoogleStrategy({
     // clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
     // scope: 'profile'
   },
-  (accessToken, refreshToken, profile, done) => {
+  async (accessToken, refreshToken, profile, done) => {
+    const existingUser = await User.findOne({ googleId: profile.id });
 
-    User.findOne({ googleId : profile.id })
-    .then((existingUser) => {
-      if(existingUser){
-      done(null, existingUser)
-    }else{
-      new User({ googleId: profile.id })
-      .save()
-      .then((user)=> done(null, user));
+    if (existingUser) {
+      return done(null, existingUser);
     }
-  })
-      
+
+    const user = await new User({ googleId: profile.id }).save();
+    done(null, user);
   }
-));
+)
+);
